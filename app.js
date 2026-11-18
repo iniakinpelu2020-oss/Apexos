@@ -347,7 +347,7 @@
       });
     });
 
-    document.addEventListener('keydown', function (event) {
+    global.document.addEventListener('keydown', function (event) {
       if (event.key !== 'Escape') return;
       if (els.appWindow && !els.appWindow.hidden) {
         closeApp();
