@@ -1,117 +1,83 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="ApexOS - lightweight offline-first WebOS shell">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>ApexOS</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-  <link rel="apple-touch-icon" href="/icon-192.png">
-  <link rel="stylesheet" href="/styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d17">
+<meta name="description" content="ApexOS - your private app suite, bundled on one origin and usable offline.">
+<title>ApexOS</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
 </head>
-<body>
-  <div id="os-root" class="mode-desktop">
-    <header id="status-bar" class="status-bar" aria-label="System status bar">
-      <div class="status-left">
-        <span class="brand">ApexOS</span>
-        <button id="status-agent-btn" class="status-btn" title="Apex Agent" aria-label="Open Apex Agent">🤖 Agent</button>
-      </div>
-      <div class="status-center">
-        <span id="status-clock" aria-live="polite">--:--</span>
-      </div>
-      <div class="status-right">
-        <span id="status-network" class="badge" title="Network status">Offline</span>
-        <span id="status-storage" class="badge" title="Offline storage quota">Storage: --</span>
-        <button id="mode-toggle" class="status-btn" title="Toggle Laptop/Android UI" aria-label="Toggle UI mode">Mode: Desktop</button>
-      </div>
-    </header>
+<body data-layout="desktop" data-wall="aurora">
+<div class="bg" aria-hidden="true"></div>
 
-    <!-- Desktop/Laptop Mode -->
-    <main id="desktop-shell" class="desktop-shell" aria-label="Desktop mode">
-      <div id="desktop-icons" class="desktop-icons" aria-label="Desktop icons"></div>
-      <div id="windows-layer" class="windows-layer" aria-label="Windows"></div>
-      <nav id="dock" class="dock" aria-label="Dock"></nav>
-    </main>
-
-    <!-- Android Mobile Mode -->
-    <main id="mobile-shell" class="mobile-shell" aria-label="Mobile mode">
-      <section id="mobile-home" class="mobile-home" aria-label="Home screen">
-        <div id="mobile-home-grid" class="mobile-grid" aria-label="Home apps"></div>
-        <div class="mobile-home-hint">
-          <button id="open-drawer-btn" class="drawer-pill" aria-label="Open app drawer">▲ Apps</button>
-        </div>
-      </section>
-
-      <section id="mobile-app-view" class="mobile-app-view hidden" aria-label="App view">
-        <div id="mobile-app-header" class="mobile-app-header">
-          <span id="mobile-app-title">App</span>
-        </div>
-        <div id="mobile-app-content" class="mobile-app-content"></div>
-      </section>
-
-      <section id="app-drawer" class="app-drawer" aria-label="App drawer" aria-hidden="true">
-        <div class="drawer-handle"></div>
-        <div class="drawer-header">
-          <h2>App Drawer</h2>
-          <button id="close-drawer-btn" class="icon-btn" aria-label="Close drawer">✕</button>
-        </div>
-        <div id="drawer-content" class="drawer-content"></div>
-      </section>
-
-      <section id="recents-view" class="recents-view hidden" aria-label="Recent apps">
-        <div class="recents-header">
-          <h2>Recent Apps</h2>
-          <button id="close-recents-btn" class="icon-btn" aria-label="Close recents">✕</button>
-        </div>
-        <div id="recents-list" class="recents-list"></div>
-      </section>
-
-      <nav id="mobile-nav" class="mobile-nav" aria-label="Android navigation bar">
-        <button id="nav-back" class="nav-btn" aria-label="Back">◀</button>
-        <button id="nav-home" class="nav-btn nav-home" aria-label="Home">●</button>
-        <button id="nav-recents" class="nav-btn" aria-label="Recent apps">■</button>
-      </nav>
-    </main>
-
-    <!-- Agent Drawer / Overlay -->
-    <aside id="agent-drawer" class="agent-drawer hidden" aria-label="Apex Agent" aria-hidden="true">
-      <div class="agent-header">
-        <div>
-          <h2>Apex Agent</h2>
-          <div id="agent-mode-indicator" class="agent-mode-indicator">Offline parser ready</div>
-        </div>
-        <div class="agent-header-actions">
-          <button id="agent-voice-btn" class="icon-btn" title="Voice input" aria-label="Voice input">🎤</button>
-          <button id="agent-close-btn" class="icon-btn" aria-label="Close agent">✕</button>
-        </div>
-      </div>
-      <div id="agent-messages" class="agent-messages" aria-live="polite"></div>
-      <form id="agent-form" class="agent-form">
-        <input id="agent-input" type="text" placeholder="Ask Apex Agent to launch apps, save notes, switch mode..." autocomplete="off">
-        <button type="submit" class="primary-btn">Send</button>
-      </form>
-    </aside>
-
-    <!-- Confirm dialog -->
-    <div id="confirm-overlay" class="confirm-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-      <div class="confirm-card">
-        <h3 id="confirm-title">Confirm action</h3>
-        <p id="confirm-message"></p>
-        <div class="confirm-actions">
-          <button id="confirm-cancel" class="secondary-btn">Cancel</button>
-          <button id="confirm-ok" class="danger-btn">Confirm</button>
-        </div>
+<header class="bar">
+  <div class="brand"><span class="mark" aria-hidden="true">A</span><span class="word">Apex<b>OS</b></span></div>
+  <div class="bar-right">
+    <span class="chip" id="netChip" title="Connection">Online</span>
+    <time class="clock" id="clock">--:--</time>
+    <div class="power">
+      <button class="power-btn" id="powerBtn" type="button" aria-haspopup="true" aria-expanded="false"
+              aria-controls="powerMenu" title="Power">
+        <span aria-hidden="true">&#9211;</span><span class="sr-only">Power menu</span>
+      </button>
+      <div class="power-menu" id="powerMenu" role="menu" aria-label="Power" hidden>
+        <button class="power-item" id="restartOs" type="button" role="menuitem">
+          <span class="power-name">Restart OS</span>
+          <span class="power-note">Fetch the latest build and reload</span>
+        </button>
       </div>
     </div>
-
-    <div id="toast-container" class="toast-container" aria-live="polite"></div>
   </div>
+</header>
 
-  <script src="/app.js"></script>
-  <script src="/agent.js"></script>
+<main class="stage" id="stage">
+  <h1 class="sr-only">Installed apps</h1>
+  <div class="grid" id="desktopGrid"></div>
+  <p class="empty" id="desktopEmpty" hidden>
+    Nothing installed yet. Open <a href="/apps/store/">Apex Store</a> and install a few apps.
+  </p>
+</main>
+
+<nav class="dock" aria-label="ApexOS dock">
+  <button class="dock-btn" id="drawerBtn" type="button" aria-expanded="false">
+    <span class="dock-glyph" aria-hidden="true">&#9638;</span>Apps
+  </button>
+  <a class="dock-btn" href="/apps/store/" data-app="store"><span class="dock-glyph" aria-hidden="true">&#9670;</span>Store</a>
+  <a class="dock-btn" href="/apps/settings/" data-app="settings"><span class="dock-glyph" aria-hidden="true">&#9881;</span>Settings</a>
+</nav>
+
+<div class="sheet" id="drawer" hidden>
+  <div class="sheet-head">
+    <span>App drawer</span>
+    <button class="sheet-done" id="drawerDone" type="button">Done</button>
+  </div>
+  <div class="grid grid-drawer" id="drawerGrid"></div>
+  <p class="sheet-foot" id="drawerCount"></p>
+</div>
+
+<div class="window" id="appWindow" hidden>
+  <div class="window-head">
+    <span class="window-title" id="windowTitle">App</span>
+    <div class="window-tools">
+      <a class="window-btn" id="windowOpen" href="/apps/store/" target="_blank" rel="noopener noreferrer">Open in tab</a>
+      <button class="window-btn" id="windowClose" type="button">Close</button>
+    </div>
+  </div>
+  <iframe
+    class="window-frame"
+    id="appFrame"
+    title="App window"
+    allow="camera; microphone; geolocation; clipboard-read; clipboard-write; fullscreen"
+    referrerpolicy="no-referrer"></iframe>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="./registry.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
