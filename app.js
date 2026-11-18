@@ -347,7 +347,7 @@
       });
     });
 
-    global.document.addEventListener('keydown', function (event) {
+    document.addEventListener('keydown', function (event) {
       if (event.key !== 'Escape') return;
       if (els.appWindow && !els.appWindow.hidden) {
         closeApp();
@@ -424,6 +424,12 @@
     els.toast = document.getElementById('toast');
 
     if (!els.desktopGrid || !els.drawerGrid) return;
+
+    /* Nothing overlays the desktop until it is asked for: a restored tab, a
+       bfcache hit or a half-written attribute must not boot with the drawer or
+       the power menu already open. */
+    openDrawer(false);
+    setPowerMenu(false);
 
     applyConfig(readConfig());
     render();
