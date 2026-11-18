@@ -1,67 +1,138 @@
 name: Bundle Apex
 
+# Clones every frontend Apex repo into one static tree (dist/) and ships it to
+# Cloudflare Pages, so every app lives on a single origin at /apps/<slug>/ and
+# can share one service-worker cache. This repo is the shell at the root of
+# dist/; the app repos are mounted underneath it.
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: bundle-apex-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  APEX_OWNER: iniakinpelu2020-oss
+  PAGES_PROJECT: apex
+
 jobs:
-  build-and-deploy:
+  bundle:
+    name: Bundle frontend apps and deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+
     steps:
-      - name: Checkout Apex Shell
+      - name: Checkout ApexOS into dist/
         uses: actions/checkout@v4
         with:
-          path: apex-shell
+          path: dist
+          clean: true
+          persist-credentials: false
 
-      - name: Prepare dist directory
+      - name: Strip VCS metadata from the shell
         run: |
-          mkdir -p dist/apps
-          cp -r apex-shell/* dist/
+          set -euo pipefail
           rm -rf dist/.git dist/.github
+          test -f dist/index.html
+          test -f dist/app.js
+          test -f dist/registry.js
+          test -f dist/sw.js
 
-      - name: Clone Apex Sub-Repos
+      - name: Clone every frontend app into dist/apps/<slug>/
         env:
-          GH_TOKEN: ${{ secrets.APEX_REPOS_TOKEN }}
+          APEX_REPOS_TOKEN: ${{ secrets.APEX_REPOS_TOKEN }}
         run: |
-          clone_app() {
-            repo="$1"
-            slug="$2"
-            if git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/iniakinpelu2020-oss/${repo}.git" "dist/apps/${slug}"; then
-              rm -rf "dist/apps/${slug}/.git" "dist/apps/${slug}/.github"
+          set -euo pipefail
+
+          if [ -z "${APEX_REPOS_TOKEN:-}" ]; then
+            echo "::error::secrets.APEX_REPOS_TOKEN is not set. Add a fine-grained PAT with read access to the private Apex repos."
+            exit 1
+          fi
+
+          mkdir -p dist/apps
+          failed=0
+
+          while read -r repo slug; do
+            [ -n "${repo}" ] || continue
+            target="dist/apps/${slug}"
+            echo "::group::${repo} -> ${target}"
+            rm -rf "${target}"
+
+            if git -c advice.detachedHead=false clone --depth 1 --quiet \
+                 "https://x-access-token:${APEX_REPOS_TOKEN}@github.com/${APEX_OWNER}/${repo}.git" \
+                 "${target}"; then
+              rm -rf "${target}/.git" "${target}/.github"
+              echo "bundled ${repo} ($(find "${target}" -type f | wc -l) files)"
             else
-              echo "Skipping ${repo} (not found or empty)"
+              echo "::error::Could not clone ${APEX_OWNER}/${repo}. Check the token scope, the repo name and that it has a default branch."
+              failed=1
             fi
-          }
 
-          clone_app "The-Apex-Ai" "ai"
-          clone_app "Apex-Studio" "studio"
-          clone_app "Apex-Editor" "editor"
-          clone_app "Apex-Browser" "browser"
-          clone_app "Apex-Drive" "drive"
-          clone_app "Apex-Docs" "docs"
-          clone_app "Apex-Notes" "notes"
-          clone_app "Apex-Planner" "planner"
-          clone_app "Apex-Drop" "drop"
-          clone_app "Apex-Gallery" "gallery"
-          clone_app "Apex-Archive" "archive"
-          clone_app "Apex-Links" "links"
-          clone_app "Apex-Backup" "backup"
-          clone_app "Apex-Vault" "vault"
-          clone_app "Apex-Shield" "shield"
-          clone_app "Apex-Sec" "sec"
-          clone_app "Apex-Auth" "auth"
-          clone_app "Apex-Ledger" "ledger"
-          clone_app "Apex-Feed" "feed"
-          clone_app "Apex-Pulse" "pulse"
-          clone_app "Automation" "automation"
-          clone_app "Apex-Store" "store"
-          clone_app "Apex-Settings" "settings"
+            echo "::endgroup::"
+          done <<'ROSTER'
+          The-Apex-Ai ai
+          Apex-Studio studio
+          Apex-Editor editor
+          Apex-Browser browser
+          Apex-Search search
+          Apex-Notrack notrack
+          Apex-Drive drive
+          Apex-Docs docs
+          Apex-Notes notes
+          Apex-Planner planner
+          Apex-Drop drop
+          Apex-Gallery gallery
+          Apex-Camera camera
+          Apex-Voice voice
+          Apex-Video video
+          Apex-Archive archive
+          Apex-Links links
+          Apex-Backup backup
+          Apex-Vault vault
+          Apex-Shield shield
+          Apex-Sec sec
+          Apex-Auth auth
+          Apex-Ledger ledger
+          Apex-Feed feed
+          Apex-Pulse pulse
+          Automation automation
+          Apex-Store store
+          Apex-Settings settings
+          ROSTER
 
-            - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+          if [ "${failed}" -ne 0 ]; then
+            echo "::error::At least one app repo failed to clone - refusing to deploy a partial build."
+            exit 1
+          fi
+
+          echo "Bundled $(find dist/apps -mindepth 1 -maxdepth 1 -type d | wc -l) apps into dist/apps/."
+
+      - name: Verify the bundle
+        run: |
+          set -euo pipefail
+          du -sh dist
+          for slug in ai studio editor browser search notrack drive docs notes planner drop gallery \
+                      camera voice video archive links backup vault shield sec auth ledger feed pulse \
+                      automation store settings; do
+            if [ -d "dist/apps/${slug}" ]; then
+              echo "ok   /apps/${slug}/"
+            else
+              echo "::error::/apps/${slug}/ is missing from the bundle"
+              exit 1
+            fi
+          done
+
+      - name: Deploy dist/ to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=apexoperatingsystem --branch=main
-
+          # dist/ has no .git of its own, so state the production branch
+          # explicitly - without --branch wrangler would create a preview alias.
+          command: pages deploy dist --project-name=${{ env.PAGES_PROJECT }} --branch=main --commit-dirty=true
