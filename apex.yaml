@@ -1,0 +1,67 @@
+name: Bundle Apex
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Apex Shell
+        uses: actions/checkout@v4
+        with:
+          path: apex-shell
+
+      - name: Prepare dist directory
+        run: |
+          mkdir -p dist/apps
+          cp -r apex-shell/* dist/
+          rm -rf dist/.git dist/.github
+
+      - name: Clone Apex Sub-Repos
+        env:
+          GH_TOKEN: ${{ secrets.APEX_REPOS_TOKEN }}
+        run: |
+          clone_app() {
+            repo="$1"
+            slug="$2"
+            if git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/iniakinpelu2020-oss/${repo}.git" "dist/apps/${slug}"; then
+              rm -rf "dist/apps/${slug}/.git" "dist/apps/${slug}/.github"
+            else
+              echo "Skipping ${repo} (not found or empty)"
+            fi
+          }
+
+          clone_app "The-Apex-Ai" "ai"
+          clone_app "Apex-Studio" "studio"
+          clone_app "Apex-Editor" "editor"
+          clone_app "Apex-Browser" "browser"
+          clone_app "Apex-Drive" "drive"
+          clone_app "Apex-Docs" "docs"
+          clone_app "Apex-Notes" "notes"
+          clone_app "Apex-Planner" "planner"
+          clone_app "Apex-Drop" "drop"
+          clone_app "Apex-Gallery" "gallery"
+          clone_app "Apex-Archive" "archive"
+          clone_app "Apex-Links" "links"
+          clone_app "Apex-Backup" "backup"
+          clone_app "Apex-Vault" "vault"
+          clone_app "Apex-Shield" "shield"
+          clone_app "Apex-Sec" "sec"
+          clone_app "Apex-Auth" "auth"
+          clone_app "Apex-Ledger" "ledger"
+          clone_app "Apex-Feed" "feed"
+          clone_app "Apex-Pulse" "pulse"
+          clone_app "Automation" "automation"
+          clone_app "Apex-Store" "store"
+          clone_app "Apex-Settings" "settings"
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=apex
+          
