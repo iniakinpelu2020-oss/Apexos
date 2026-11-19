@@ -19,7 +19,8 @@ permissions:
 
 env:
   APEX_OWNER: iniakinpelu2020-oss
-  PAGES_PROJECT: apex
+  # Must match the Cloudflare Pages project that serves apexoperatingsystem.pages.dev.
+  PAGES_PROJECT: apexoperatingsystem
 
 jobs:
   bundle:

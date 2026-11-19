@@ -52,9 +52,18 @@ This file is the canonical copy: it is served at the suite root as
 
 ## Deploying
 
-The workflow needs three secrets: `APEX_REPOS_TOKEN` (read access to the app
-repos), `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. It refuses to deploy
-a partial bundle - if any app in the roster fails to clone, the run fails.
+The workflow needs three secrets: `APEX_REPOS_TOKEN`, `CLOUDFLARE_API_TOKEN`
+and `CLOUDFLARE_ACCOUNT_ID`. It refuses to deploy a partial bundle - if any app
+in the roster fails to clone, the run fails.
+
+- `APEX_REPOS_TOKEN` must be a fine-grained PAT with **read access to every
+  repo in the roster**, not just one. A token scoped to a single repo fails
+  with `remote: Invalid username or token` on the rest.
+- It deploys to the Pages project named in `env.PAGES_PROJECT`
+  (`apexoperatingsystem`), which also serves the shell at its `pages.dev`
+  address. If that project's own Git integration is left on, every push to
+  this repo deploys the shell alone and can overwrite the bundled `/apps/`
+  tree; turn automatic deployments off there once the workflow is green.
 
 ## Where the plan lives
 
