@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0b0d17">
 <meta name="description" content="ApexOS - your private app suite, bundled on one origin and usable offline.">
 <title>ApexOS</title>
+<script src="./apex-login.js"></script>
 <link rel="stylesheet" href="./styles.css">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
@@ -25,6 +26,10 @@
         <span aria-hidden="true">&#9211;</span><span class="sr-only">Power menu</span>
       </button>
       <div class="power-menu" id="powerMenu" role="menu" aria-label="Power" hidden>
+        <button class="power-item" id="apexAccount" type="button" role="menuitem" data-apex-signout title="Sign out of Apex">
+          <span class="power-name" data-apex-account>Signed in</span>
+          <span class="power-note">Signed in &middot; tap to sign out</span>
+        </button>
         <button class="power-item" id="restartOs" type="button" role="menuitem">
           <span class="power-name">Restart OS</span>
           <span class="power-note">Fetch the latest build and reload</span>

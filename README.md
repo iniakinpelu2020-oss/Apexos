@@ -13,6 +13,7 @@ offline.
 | `registry.js` | Shared contract for Apex Store and Apex Settings: storage keys, cache names, BroadcastChannel messages |
 | `styles.css` | Shell styling, wallpapers, layout modes |
 | `sw.js` | Caches the shell only; `/apps/` keeps its own worker and cache |
+| `apex-login.js` | The one sign-in for the whole suite: full-screen gate, Firebase Auth over REST |
 | `manifest.json`, `icon-*.png` | Install identity for the OS itself |
 | `.github/workflows/bundle-apex.yml` | Clones every app repo into `dist/apps/<slug>/` and deploys to Cloudflare Pages |
 
@@ -28,6 +29,26 @@ online-only if it refuses.
 - Theme and layout changes arrive on `apex-settings` and apply immediately.
 - Every app path in `app.js` matches a repo in the workflow roster; adding an
   app means editing both.
+
+## One sign-in for the whole suite
+
+`apex-login.js` is a single dependency-free script. It shows a full-screen
+sign-in until there is a session, keeps the ID token in `localStorage` under
+`apex-auth-session`, and exposes `ApexLogin.session()`, `.token()`,
+`.signOut()` and `.onChange()`. The key is the same one `Apex-Auth` uses, so a
+sign-in on any page covers every app on the origin.
+
+- The shell loads it in `<head>`, so the desktop never paints before the gate.
+- The workflow copies it into every `dist/apps/<slug>/` folder and adds one
+  `<script>` tag to that app's `index.html`, so all 28 bundled apps sit behind
+  the same door without touching their repos.
+- The power menu shows the signed-in email and signs out on tap.
+- If the Firebase console has email/password switched off, or the device is
+  offline with no earlier session, the gate offers "Open with local data only"
+  for that tab instead of locking you out. That is a convenience, not security.
+
+This file is the canonical copy: it is served at the suite root as
+`/apex-login.js`, and the workflow copies it into every app folder.
 
 ## Deploying
 

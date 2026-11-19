@@ -3,8 +3,8 @@
  * Caches only the shell itself. Anything under /apps/ is passed straight
  * through so each sub-app keeps its own worker, scope and cache.
  */
-const VERSION = 'apex-shell-v3';
-const SHELL = ['./', './index.html', './styles.css', './app.js', './registry.js'];
+const VERSION = 'apex-shell-v4';
+const SHELL = ['./', './index.html', './styles.css', './app.js', './registry.js', './apex-login.js'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
