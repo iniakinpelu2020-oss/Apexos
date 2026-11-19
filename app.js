@@ -22,7 +22,6 @@
     { id: 'browser',    name: 'Apex Browser',  cat: 'Utilities',    repo: 'Apex-Browser',  path: '/apps/browser/' },
     { id: 'search',     name: 'Apex Search',   cat: 'Utilities',    repo: 'Apex-Search',   path: '/apps/search/' },
     { id: 'notrack',    name: 'Apex NoTrack',  cat: 'Utilities',    repo: 'Apex-Notrack',  path: '/apps/notrack/' },
-    { id: 'drive',      name: 'Apex Drive',    cat: 'Files',        repo: 'Apex-Drive',    path: '/apps/drive/' },
     { id: 'docs',       name: 'Apex Docs',     cat: 'Knowledge',    repo: 'Apex-Docs',     path: '/apps/docs/' },
     { id: 'notes',      name: 'Apex Notes',    cat: 'Knowledge',    repo: 'Apex-Notes',    path: '/apps/notes/' },
     { id: 'planner',    name: 'Apex Planner',  cat: 'Productivity', repo: 'Apex-Planner',  path: '/apps/planner/' },
@@ -41,7 +40,6 @@
     { id: 'ledger',     name: 'Apex Ledger',   cat: 'Productivity', repo: 'Apex-Ledger',   path: '/apps/ledger/' },
     { id: 'feed',       name: 'Apex Feed',     cat: 'Media',        repo: 'Apex-Feed',     path: '/apps/feed/' },
     { id: 'pulse',      name: 'Apex Pulse',    cat: 'System',       repo: 'Apex-Pulse',    path: '/apps/pulse/' },
-    { id: 'automation', name: 'Automation',    cat: 'Automation',   repo: 'Automation',    path: '/apps/automation/' },
     { id: 'store',      name: 'Apex Store',    cat: 'System',       repo: 'Apex-Store',    path: '/apps/store/' },
     { id: 'settings',   name: 'Apex Settings', cat: 'System',       repo: 'Apex-Settings', path: '/apps/settings/' }
   ];
@@ -144,7 +142,7 @@
     }
     if (!Array.isArray(list) || !list.length) {
       return CATALOG.filter(function (app) {
-        return ['store', 'settings', 'ai', 'drive', 'sec', 'shield'].indexOf(app.id) !== -1;
+        return ['store', 'settings', 'ai', 'sec', 'shield'].indexOf(app.id) !== -1;
       }).map(function (app) {
         return { id: app.id, name: app.name, url: app.path, source: 'core' };
       });
