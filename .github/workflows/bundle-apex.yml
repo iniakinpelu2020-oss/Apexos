@@ -4,6 +4,9 @@ name: Bundle Apex
 # Cloudflare Pages, so every app lives on a single origin at /apps/<slug>/ and
 # can share one service-worker cache. This repo is the shell at the root of
 # dist/; the app repos are mounted underneath it.
+#
+# The cloning, gating and deploying steps live in .github/scripts/ so the
+# workflow log stays short enough to actually read the error at the end.
 
 on:
   push:
@@ -39,6 +42,7 @@ jobs:
       - name: Strip VCS metadata from the shell
         run: |
           set -euo pipefail
+          chmod +x .github/scripts/*.sh
           rm -rf dist/.git dist/.github
           test -f dist/index.html
           test -f dist/app.js
@@ -48,121 +52,10 @@ jobs:
       - name: Clone every frontend app into dist/apps/<slug>/
         env:
           APEX_REPOS_TOKEN: ${{ secrets.APEX_REPOS_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          if [ -z "${APEX_REPOS_TOKEN:-}" ]; then
-            echo "::error::secrets.APEX_REPOS_TOKEN is not set. Add a fine-grained PAT with read access to the private Apex repos."
-            exit 1
-          fi
-
-          # A token pasted with a trailing newline or space goes into the clone
-          # URL verbatim, and GitHub rejects it as "Invalid username or token".
-          TOKEN="$(printf '%s' "${APEX_REPOS_TOKEN}" | tr -d '[:space:]')"
-          if [ -z "${TOKEN}" ]; then
-            echo "::error::secrets.APEX_REPOS_TOKEN is empty after trimming whitespace."
-            exit 1
-          fi
-
-          mkdir -p dist/apps
-          failed=0
-          first_failure=''
-
-          while read -r repo slug; do
-            [ -n "${repo}" ] || continue
-            target="dist/apps/${slug}"
-            echo "::group::${repo} -> ${target}"
-            rm -rf "${target}"
-
-            if git -c advice.detachedHead=false clone --depth 1 --quiet \
-                 "https://x-access-token:${TOKEN}@github.com/${APEX_OWNER}/${repo}.git" \
-                 "${target}"; then
-              rm -rf "${target}/.git" "${target}/.github"
-              echo "bundled ${repo} ($(find "${target}" -type f | wc -l) files)"
-            else
-              echo "::error::Could not clone ${APEX_OWNER}/${repo}. Check the token scope, the repo name and that it has a default branch."
-              [ -n "${first_failure}" ] || first_failure="${repo}"
-              failed=1
-            fi
-
-            echo "::endgroup::"
-          done <<'ROSTER'
-          The-Apex-Ai ai
-          Apex-Studio studio
-          Apex-Editor editor
-          Apex-Browser browser
-          Apex-Search search
-          Apex-Notrack notrack
-          Apex-Drive drive
-          Apex-Docs docs
-          Apex-Notes notes
-          Apex-Planner planner
-          Apex-Drop drop
-          Apex-Gallery gallery
-          Apex-Camera camera
-          Apex-Voice voice
-          Apex-Video video
-          Apex-Archive archive
-          Apex-Links links
-          Apex-Backup backup
-          Apex-Vault vault
-          Apex-Shield shield
-          Apex-Sec sec
-          Apex-Auth auth
-          Apex-Ledger ledger
-          Apex-Feed feed
-          Apex-Pulse pulse
-          Automation automation
-          Apex-Store store
-          Apex-Settings settings
-          ROSTER
-
-          if [ "${failed}" -ne 0 ]; then
-            if [ "${first_failure}" != "The-Apex-Ai" ]; then
-              echo "::error::APEX_REPOS_TOKEN was rejected for ${first_failure}. A public repo clones fine without a token, so one success proves nothing. Check the token is not expired, that Repository access covers every Apex repo (All repositories, or all 28 selected), that it has Contents: Read-only, and that it is a secret on this repo named exactly APEX_REPOS_TOKEN."
-            fi
-            echo "::error::At least one app repo failed to clone - refusing to deploy a partial build."
-            exit 1
-          fi
-
-          echo "Bundled $(find dist/apps -mindepth 1 -maxdepth 1 -type d | wc -l) apps into dist/apps/."
+        run: bash .github/scripts/bundle.sh
 
       - name: Gate every bundled app behind the Apex sign-in
-        run: |
-          set -euo pipefail
-          python3 - <<'PYGATE'
-          import pathlib, shutil, sys
-
-          root = pathlib.Path("dist")
-          gate = root / "apex-login.js"
-          if not gate.exists():
-              sys.exit("::error::dist/apex-login.js is missing - the shell must ship the gate")
-
-          tag = '<script src="./apex-login.js"></script>'
-          gated, skipped = 0, []
-
-          for app in sorted(p for p in (root / "apps").iterdir() if p.is_dir()):
-              index = app / "index.html"
-              if not index.exists():
-                  skipped.append(app.name)
-                  continue
-              shutil.copyfile(gate, app / "apex-login.js")
-              html = index.read_text(encoding="utf-8")
-              if "apex-login.js" in html:
-                  continue
-              if "</body>" in html:
-                  html = html.replace("</body>", tag + "\n</body>", 1)
-              else:
-                  html = html.rstrip() + "\n" + tag + "\n"
-              index.write_text(html, encoding="utf-8")
-              gated += 1
-
-          print(f"gated {gated} apps")
-          if skipped:
-              print(f"::warning::no index.html at the root of: {', '.join(skipped)}")
-          if gated == 0:
-              sys.exit("::error::No app was gated - check the bundle layout")
-          PYGATE
+        run: python3 .github/scripts/gate.py
 
       - name: Verify the bundle
         run: |
@@ -180,10 +73,7 @@ jobs:
           done
 
       - name: Deploy dist/ to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # dist/ has no .git of its own, so state the production branch
-          # explicitly - without --branch wrangler would create a preview alias.
-          command: pages deploy dist --project-name=${{ env.PAGES_PROJECT }} --branch=main --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bash .github/scripts/deploy.sh
