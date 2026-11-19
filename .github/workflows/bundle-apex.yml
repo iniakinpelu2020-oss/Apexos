@@ -56,8 +56,17 @@ jobs:
             exit 1
           fi
 
+          # A token pasted with a trailing newline or space goes into the clone
+          # URL verbatim, and GitHub rejects it as "Invalid username or token".
+          TOKEN="$(printf '%s' "${APEX_REPOS_TOKEN}" | tr -d '[:space:]')"
+          if [ -z "${TOKEN}" ]; then
+            echo "::error::secrets.APEX_REPOS_TOKEN is empty after trimming whitespace."
+            exit 1
+          fi
+
           mkdir -p dist/apps
           failed=0
+          first_failure=''
 
           while read -r repo slug; do
             [ -n "${repo}" ] || continue
@@ -66,12 +75,13 @@ jobs:
             rm -rf "${target}"
 
             if git -c advice.detachedHead=false clone --depth 1 --quiet \
-                 "https://x-access-token:${APEX_REPOS_TOKEN}@github.com/${APEX_OWNER}/${repo}.git" \
+                 "https://x-access-token:${TOKEN}@github.com/${APEX_OWNER}/${repo}.git" \
                  "${target}"; then
               rm -rf "${target}/.git" "${target}/.github"
               echo "bundled ${repo} ($(find "${target}" -type f | wc -l) files)"
             else
               echo "::error::Could not clone ${APEX_OWNER}/${repo}. Check the token scope, the repo name and that it has a default branch."
+              [ -n "${first_failure}" ] || first_failure="${repo}"
               failed=1
             fi
 
@@ -108,6 +118,9 @@ jobs:
           ROSTER
 
           if [ "${failed}" -ne 0 ]; then
+            if [ "${first_failure}" != "The-Apex-Ai" ]; then
+              echo "::error::APEX_REPOS_TOKEN was rejected for ${first_failure}. A public repo clones fine without a token, so one success proves nothing. Check the token is not expired, that Repository access covers every Apex repo (All repositories, or all 28 selected), that it has Contents: Read-only, and that it is a secret on this repo named exactly APEX_REPOS_TOKEN."
+            fi
             echo "::error::At least one app repo failed to clone - refusing to deploy a partial build."
             exit 1
           fi
