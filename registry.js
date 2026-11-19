@@ -27,10 +27,15 @@
     { id: 'store', name: 'Apex Store', url: '/apps/store/' },
     { id: 'settings', name: 'Apex Settings', url: '/apps/settings/' },
     { id: 'ai', name: 'Apex AI', url: '/apps/ai/' },
-    { id: 'drive', name: 'Apex Drive', url: '/apps/drive/' },
     { id: 'sec', name: 'Apex Sec', url: '/apps/sec/' },
     { id: 'shield', name: 'Apex Shield', url: '/apps/shield/' }
   ];
+
+  /* Apps that used to be core but have no web build to open. Apex Drive is an
+     Android project, so its tile only ever bounced back to this shell. Merge()
+     drops these ids instead of seeding them, which also clears the entry older
+     devices already saved to localStorage. */
+  var RETIRED_APPS = ['drive'];
 
   /* Files every Apex app is expected to ship; missing ones are skipped. */
   var CORE_FILES = ['', 'index.html', 'styles.css', 'app.js', 'manifest.json'];
@@ -119,7 +124,7 @@
 
     (Array.isArray(list) ? list : []).forEach(function (raw) {
       var app = normalizeApp(raw);
-      if (!app || seen[app.id]) return;
+      if (!app || seen[app.id] || RETIRED_APPS.indexOf(app.id) !== -1) return;
       seen[app.id] = true;
       out.push(app);
     });
