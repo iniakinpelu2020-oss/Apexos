@@ -45,7 +45,6 @@ Apex-Editor editor
 Apex-Browser browser
 Apex-Search search
 Apex-Notrack notrack
-Apex-Drive drive
 Apex-Docs docs
 Apex-Notes notes
 Apex-Planner planner
