@@ -42,7 +42,12 @@ jobs:
       - name: Strip VCS metadata from the shell
         run: |
           set -euo pipefail
-          chmod +x .github/scripts/*.sh
+          # The whole repo is checked out into dist/, so these scripts live there
+          # too. Copy them out of dist/ before its .github is deleted, and keep
+          # them outside the deployed tree.
+          mkdir -p .bundle
+          cp -r dist/.github/scripts .bundle/scripts
+          chmod +x .bundle/scripts/*.sh
           rm -rf dist/.git dist/.github
           test -f dist/index.html
           test -f dist/app.js
@@ -52,10 +57,10 @@ jobs:
       - name: Clone every frontend app into dist/apps/<slug>/
         env:
           APEX_REPOS_TOKEN: ${{ secrets.APEX_REPOS_TOKEN }}
-        run: bash .github/scripts/bundle.sh
+        run: bash .bundle/scripts/bundle.sh
 
       - name: Gate every bundled app behind the Apex sign-in
-        run: python3 .github/scripts/gate.py
+        run: python3 .bundle/scripts/gate.py
 
       - name: Verify the bundle
         run: |
@@ -76,4 +81,4 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: bash .github/scripts/deploy.sh
+        run: bash .bundle/scripts/deploy.sh
