@@ -68,6 +68,16 @@ Apex-Store store
 Apex-Settings settings
 ROSTER
 
+# The README calls registry.js identical in the shell, Apex Store and Apex
+# Settings. Only the shell's copy knows about retired apps, so the bundle uses
+# it everywhere rather than trusting each repo to have kept up.
+for app in store settings; do
+  if [ -f "dist/apps/${app}/registry.js" ]; then
+    cp dist/registry.js "dist/apps/${app}/registry.js"
+    echo "refreshed the shared registry in ${app}"
+  fi
+done
+
 if [ "${failed}" -ne 0 ]; then
   if [ "${first_failure}" != "The-Apex-Ai" ]; then
     echo "::error::APEX_REPOS_TOKEN was rejected for ${first_failure}. Check the token is not expired, that Repository access covers every Apex repo, that it has Contents: Read-only, and that it is a secret on this repo named exactly APEX_REPOS_TOKEN."
