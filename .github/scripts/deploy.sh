@@ -20,7 +20,10 @@ fi
 TOKEN="$(printf '%s' "${CLOUDFLARE_API_TOKEN}" | tr -d '[:space:]')"
 ACCOUNT="$(printf '%s' "${CLOUDFLARE_ACCOUNT_ID}" | tr -d '[:space:]')"
 
-echo "token length ${#TOKEN}, account id length ${#ACCOUNT} (expect 32 for the account id)"
+echo "token length ${#TOKEN}, account id length ${#ACCOUNT} (expect 40 and 32)"
+if [ "${#TOKEN}" -ne 40 ]; then
+  echo "::warning::A Cloudflare API token is 40 characters; this secret holds ${#TOKEN}. Re-copy the token value from the Cloudflare dashboard."
+fi
 
 api() {
   url="$1"
@@ -31,9 +34,9 @@ api() {
 code="$(api https://api.cloudflare.com/client/v4/user/tokens/verify /tmp/verify.json)"
 echo "token verify: HTTP ${code}"
 cat /tmp/verify.json
- echo
+echo
 if [ "${code}" != "200" ]; then
-  echo "::error::Cloudflare rejected CLOUDFLARE_API_TOKEN. Create a new token at My Profile -> API Tokens and paste it into the CLOUDFLARE_API_TOKEN secret."
+  echo "::error::Cloudflare rejected CLOUDFLARE_API_TOKEN as invalid. Copy the token value again from My Profile -> API Tokens (it is 40 characters, shown once at creation) and replace the CLOUDFLARE_API_TOKEN secret."
   exit 1
 fi
 
